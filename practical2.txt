@@ -1,0 +1,118 @@
+// MongoDB Queries for the "restaurants" Collection
+
+// 1. Display all the documents in the collection "restaurants".
+db.restaurants.find();
+
+// 2. Display the fields restaurant_id, name, borough, and cuisine for all the documents in the collection "restaurants".
+db.restaurants.find({}, { restaurant_id: 1, name: 1, borough: 1, cuisine: 1 });
+
+// 3. Display the fields restaurant_id, name, borough, and cuisine, but exclude the field _id for all the documents in the collection "restaurants".
+db.restaurants.find({}, { restaurant_id: 1, name: 1, borough: 1, cuisine: 1, _id: 0 });
+
+// 4. Display the fields zip code, but exclude the field _id for all the documents in the collection "restaurants".
+db.restaurants.find({}, { "address.zipcode": 1, _id: 0 });
+
+// 5. Display all the restaurants which are in the borough Brooklyn.
+db.restaurants.find({ borough: "Brooklyn" });
+
+// 6. Display the first 5 restaurants which are in the borough Brooklyn.
+db.restaurants.find({ borough: "Brooklyn" }).limit(5);
+
+// 7. Display the next 5 restaurants after skipping the first 5 which are in the borough Brooklyn.
+db.restaurants.find({ borough: "Brooklyn" }).skip(5).limit(5);
+
+// 8. Find the restaurants that achieved a score of more than 70.
+db.restaurants.find({ "grades.score": { $gt: 70 } });
+
+// 9. Find the restaurants that achieved a score of more than 70 but less than 100.
+db.restaurants.find({ "grades.score": { $gt: 70, $lt: 100 } });
+
+// 10. Find the restaurants that do not prepare any cuisine of 'American' and their grade score of more than 70.
+db.restaurants.find({ cuisine: { $ne: "American " }, "grades.score": { $gt: 70 } });
+
+// 11. Find the restaurants which do not prepare any cuisine of 'American' and achieved a grade point 'A' not belonging to the borough Brooklyn. The document must be displayed according to the cuisine in descending order.
+db.restaurants.find({
+  cuisine: { $ne: "American " },
+  "grades.grade": "A",
+  borough: { $ne: "Brooklyn" }
+}).sort({ cuisine: -1 });
+
+// 12. Find the restaurant_id, name, borough, and cuisine for those restaurants which contain 'Wil' as the first three letters of their name.
+db.restaurants.find({ name: { $regex: /^Wil/ } }, { restaurant_id: 1, name: 1, borough: 1, cuisine: 1 });
+
+// 13. Find the restaurant_id, name, borough, and cuisine for those restaurants which contain 'Food' as the last three letters of their name.
+db.restaurants.find({ name: { $regex: /Food$/ } }, { restaurant_id: 1, name: 1, borough: 1, cuisine: 1 });
+
+// 14. Find the restaurant_id, name, borough, and cuisine for those restaurants which contain 'Seafood' as three letters somewhere in their name.
+db.restaurants.find({ name: { $regex: /Seafood/ } }, { restaurant_id: 1, name: 1, borough: 1, cuisine: 1 });
+
+// 15. Find the restaurants which belong to the borough Bronx and prepare either American or Chinese dish.
+db.restaurants.find({ borough: "Bronx", cuisine: { $in: ["American ", "Chinese"] } });
+
+// 16. Find the restaurant_id, name, borough, and cuisine for those restaurants which belong to the borough of Staten Island or Queens, or Bronx or Brooklyn.
+db.restaurants.find({ borough: { $in: ["Staten Island", "Queens", "Bronx", "Brooklyn"] } }, { restaurant_id: 1, name: 1, borough: 1, cuisine: 1 });
+
+// 17. Find the restaurant_id, name, borough, and cuisine for those restaurants which do not belong to the borough Staten Island or Queens or Bronx or Brooklyn.
+db.restaurants.find({ borough: { $nin: ["Staten Island", "Queens", "Bronx", "Brooklyn"] } }, { restaurant_id: 1, name: 1, borough: 1, cuisine: 1 });
+
+// 18. Find the restaurant_id, name, borough, and cuisine for those restaurants which achieved a score that is not more than 10.
+db.restaurants.find({ "grades.score": { $not: { $gt: 10 } } }, { restaurant_id: 1, name: 1, borough: 1, cuisine: 1 });
+
+// 19. Find the restaurant_id, name, borough, and cuisine for those restaurants which prepared dishes except 'American' and 'Chinese' or the restaurant's name begins with the letter 'Sea'.
+db.restaurants.find({
+  $or: [
+    { cuisine: { $nin: ["American ", "Chinese"] } },
+    { name: { $regex: /^Sea/ } }
+  ]
+}, { restaurant_id: 1, name: 1, borough: 1, cuisine: 1 });
+
+// 20. Arrange the name of the restaurants in ascending order along with all the columns.
+db.restaurants.find().sort({ name: 1 });
+
+// 21. Arrange the name of the restaurants in descending order along with all the columns.
+db.restaurants.find().sort({ name: -1 });
+
+// 22. Arrange the name of the cuisine in ascending order and for that same cuisine, the borough should be in descending order.
+db.restaurants.find().sort({ cuisine: 1, borough: -1 });
+
+// 23. Check whether all the addresses contain the building or not.
+db.restaurants.find({ "address.building": { $exists: false } });
+
+// 24. Find the restaurant_id, name, and grades for those restaurants where the 2nd element of the grades array contains a grade of "A" and score 9 on an ISODate "2013-09-11T00:00:00Z".
+db.restaurants.find({
+  "grades.1.grade": "A",
+  "grades.1.score": 9,
+  "grades.1.date": ISODate("2013-09-11T00:00:00Z")
+}, { restaurant_id: 1, name: 1, grades: 1 });
+
+// 25. Find the restaurant_id, name, and grades for those restaurants which achieved a grade of "A" and scored 11 on an ISODate "2013-09-11T00:00:00Z" among many of the survey dates.
+db.restaurants.find({
+  "grades": {
+    $elemMatch: {
+      grade: "A",
+      score: 11,
+      date: ISODate("2013-09-11T00:00:00Z")
+    }
+  }
+}, { restaurant_id: 1, name: 1, grades: 1 });
+
+// 26. Select all documents in the "restaurants" collection where the coord field value is double.
+db.restaurants.find({ "address.coord": { $type: "double" } });
+
+// 27. Select the restaurant_id, name, and grades for those restaurants which return 0 as a remainder after dividing the score by 7.
+db.restaurants.find({
+  "grades.score": { $mod: [7, 0] }
+}, { restaurant_id: 1, name: 1, grades: 1 });
+
+// 28. Find the restaurants with more than three grade surveys ('grades' Array contains more than three elements) and display only the name and the number of grades.
+db.restaurants.aggregate([
+  { $project: { name: 1, numberOfGrades: { $size: "$grades" } } },
+  { $match: { numberOfGrades: { $gt: 3 } } }
+]);
+
+// 29. Count the number of restaurants in the borough "Bronx" for each cuisine type. Display the number of restaurants that prepare Caribbean cuisine.
+db.restaurants.aggregate([
+  { $match: { borough: "Bronx" } },
+  { $group: { _id: "$cuisine", count: { $sum: 1 } } },
+  { $match: { _id: "Caribbean" } }
+]);
