@@ -1,3 +1,4 @@
+//************************* Practical 2 ***********************************
 // MongoDB Queries for the "restaurants" Collection
 
 // 1. Display all the documents in the collection "restaurants".
